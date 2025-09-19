@@ -1,0 +1,133 @@
+local Libary = loadstring(game:HttpGet("https://raw.githubusercontent.com/tbao143/Library-ui/refs/heads/main/Redzhubui"))()
+workspace.FallenPartsDestroyHeight = -math.huge
+
+local Window = Libary:MakeWindow({
+    Title = "Low Hub | Universal ",
+    SubTitle = "by: maverickk7_ & ゆゆシグマ",
+    LoadText = "Loading...",
+    Flags = "LowHub_Universal"
+})
+Window:AddMinimizeButton({
+    Button = { Image = "rbxassetid://74542926893496", BackgroundTransparency = 0 },
+    Corner = { CornerRadius = UDim.new(35, 1) },
+})
+
+local MainTab = Window:MakeTab({ Title = "Main", Icon = "rbxassetid://82316288946936" })
+
+MainTab:AddSection({ "Fly" })
+
+local voandoAtivo = false
+local objetoVelocidade = nil
+local objetoGiro = nil
+
+local function toggleFlyv7()
+    local jogadorLocal = game:GetService("Players").LocalPlayer
+    local personagemJogador = jogadorLocal.Character
+    if not personagemJogador then return end
+    
+    local humanoidPersonagem = personagemJogador:FindFirstChildOfClass("Humanoid")
+    if not humanoidPersonagem then return end
+    
+    if voandoAtivo then
+        voandoAtivo = false
+        
+        if objetoVelocidade then
+            objetoVelocidade:Destroy()
+            objetoVelocidade = nil
+        end
+        if objetoGiro then
+            objetoGiro:Destroy()
+            objetoGiro = nil
+        end
+        
+        humanoidPersonagem:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
+        humanoidPersonagem:SetStateEnabled(Enum.HumanoidStateType.Flying, true)
+        humanoidPersonagem:SetStateEnabled(Enum.HumanoidStateType.Climbing, true)
+        humanoidPersonagem:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+        humanoidPersonagem:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+        humanoidPersonagem:SetStateEnabled(Enum.HumanoidStateType.Running, true)
+        humanoidPersonagem:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
+        
+        local scriptAnimacao = personagemJogador:FindFirstChild("Animate")
+        if scriptAnimacao then
+            scriptAnimacao.Disabled = false
+        end
+        
+        humanoidPersonagem.PlatformStand = false
+        
+    else
+        voandoAtivo = true
+        
+        local parteCorpoAlvo
+        if humanoidPersonagem.RigType == Enum.HumanoidRigType.R6 then
+            parteCorpoAlvo = personagemJogador:FindFirstChild("Torso")
+        else
+            parteCorpoAlvo = personagemJogador:FindFirstChild("UpperTorso")
+        end
+        
+        if not parteCorpoAlvo then return end
+        
+        objetoGiro = Instance.new("BodyGyro")
+        objetoGiro.P = 9000
+        objetoGiro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+        objetoGiro.CFrame = parteCorpoAlvo.CFrame
+        objetoGiro.Parent = parteCorpoAlvo
+        
+        objetoVelocidade = Instance.new("BodyVelocity")
+        objetoVelocidade.Velocity = Vector3.new(0, 0, 0)
+        objetoVelocidade.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        objetoVelocidade.Parent = parteCorpoAlvo
+        
+        humanoidPersonagem:SetStateEnabled(Enum.HumanoidStateType.Freefall, false)
+        humanoidPersonagem:SetStateEnabled(Enum.HumanoidStateType.Flying, false)
+        humanoidPersonagem:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
+        humanoidPersonagem:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+        humanoidPersonagem:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+        humanoidPersonagem:SetStateEnabled(Enum.HumanoidStateType.Running, false)
+        humanoidPersonagem:ChangeState(Enum.HumanoidStateType.Swimming)
+        
+        local scriptAnimacao = personagemJogador:FindFirstChild("Animate")
+        if scriptAnimacao then
+            scriptAnimacao.Disabled = true
+        end
+        
+        humanoidPersonagem.PlatformStand = true
+        
+        game:GetService("RunService").Heartbeat:Connect(function()
+            if not voandoAtivo or not objetoVelocidade or not objetoGiro or humanoidPersonagem.Health <= 0 then
+                return
+            end
+            
+            local cameraAtual = workspace.CurrentCamera
+            local vetorMovimento = humanoidPersonagem.MoveDirection
+            local velocidadeVoo = 16
+            
+            if vetorMovimento.Magnitude > 0 then
+                local olharCamera = cameraAtual.CFrame.LookVector
+                local direitaCamera = cameraAtual.CFrame.RightVector
+                
+                local direcaoMovimento = (olharCamera * vetorMovimento.Z + direitaCamera * vetorMovimento.X).Unit
+                objetoVelocidade.Velocity = direcaoMovimento * velocidadeVoo
+            else
+                objetoVelocidade.Velocity = Vector3.new(0, 0, 0)
+            end
+            
+            objetoGiro.CFrame = cameraAtual.CFrame
+        end)
+    end
+end
+
+MainTab:AddToggle({
+    Title = "Toggle Fly",
+    Description = "Ativa ou desativa o sistema de voo",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            toggleFlyv7()
+        else
+            if voandoAtivo then
+                toggleFlyv7()
+            end
+        end
+    end
+})
